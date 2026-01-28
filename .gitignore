@@ -13,7 +13,7 @@ wheels/
 .env
 
 #log files
-/logs
+# /logs
 
 # Coverage reports
 .coverage

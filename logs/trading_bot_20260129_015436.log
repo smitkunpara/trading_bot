@@ -1,0 +1,7 @@
+2026-01-29 01:54:36 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-29 01:54:36 | INFO     | trading_bot:main:291 | Processing order: BUY 0.002 BTCUSDT (MARKET)
+2026-01-29 01:54:36 | INFO     | trading_bot:place_market_order:86 | Placing MARKET order: BUY 0.002 BTCUSDT
+2026-01-29 01:54:36 | INFO     | trading_bot:_request:162 | API Request: GET /fapi/v1/ticker/price
+2026-01-29 01:54:37 | INFO     | trading_bot:place_order:237 | Placing MARKET order: BUY 0.002 BTCUSDT
+2026-01-29 01:54:37 | INFO     | trading_bot:_request:162 | API Request: POST /fapi/v1/order
+2026-01-29 01:54:37 | INFO     | trading_bot:place_market_order:120 | MARKET order placed successfully. Order ID: 12016339244

@@ -1,0 +1,4 @@
+2026-01-29 01:30:44 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-29 01:30:44 | INFO     | trading_bot:cancel_order:370 | Cancelling order 12016137952 for BTCUSDT
+2026-01-29 01:30:44 | INFO     | trading_bot:_request:162 | API Request: DELETE /fapi/v1/order
+2026-01-29 01:30:45 | INFO     | trading_bot:cancel_order:375 | Order 12016137952 cancelled successfully

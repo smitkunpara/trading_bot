@@ -1,0 +1,4 @@
+2026-01-29 01:32:03 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-29 01:32:03 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-29 01:32:03 | INFO     | trading_bot:_request:162 | API Request: GET /fapi/v2/positionRisk
+2026-01-29 01:32:08 | ERROR    | trading_bot:_handle_response:122 | API Error [-1021]: Timestamp for this request is outside of the recvWindow.

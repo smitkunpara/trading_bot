@@ -1,0 +1,5 @@
+2026-01-29 01:32:17 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-29 01:32:17 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-29 01:32:17 | INFO     | trading_bot:_request:162 | API Request: GET /fapi/v2/positionRisk
+2026-01-29 01:32:18 | INFO     | trading_bot:place_order:237 | Placing MARKET order: SELL 0.002 BTCUSDT
+2026-01-29 01:32:18 | INFO     | trading_bot:_request:162 | API Request: POST /fapi/v1/order

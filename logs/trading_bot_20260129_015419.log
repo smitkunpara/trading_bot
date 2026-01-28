@@ -1,0 +1,2 @@
+2026-01-29 01:54:19 | INFO     | trading_bot:main:291 | Processing order: BUY 0.01 BTCUSDT (MARKET)
+2026-01-29 01:54:19 | INFO     | trading_bot:main:291 | Processing order: SELL 0.1 ETHUSDT (LIMIT)
