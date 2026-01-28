@@ -15,5 +15,11 @@ wheels/
 #log files
 /logs
 
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+
 #extra/temp files
 temp/

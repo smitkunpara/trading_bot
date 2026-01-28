@@ -1,115 +1,63 @@
 # Command Examples
 
-## Basic Commands
+This guide demonstrates commands in the order you would use them for actual trading.
 
-### Check Current Price
-Shows current market price and helpful suggestions.
-```bash
-uv run python cli.py --symbol BTCUSDT
-```
+## 1. Check Account Balance
 
-### View Account Information
-Display account balance and available funds.
+Start by viewing your account balance and available funds.
 ```bash
 uv run python cli.py --account
 ```
 
-## Market Orders
+## 2. Check Current Price
 
-### Buy Market Order
+Check the current market price before placing orders.
+```bash
+uv run python cli.py --symbol BTCUSDT
+```
+
+## 3. Place Orders
+
+### Market Order
 Execute immediate buy at current market price.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.002
 ```
 
-### Sell Market Order
-Execute immediate sell at current market price.
-```bash
-uv run python cli.py --symbol BTCUSDT --side SELL --type MARKET --quantity 0.002
-```
-
-## Limit Orders
-
-### Buy Limit Order
-Place buy order at specific price or lower.
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type LIMIT --quantity 0.002 --price 85000
-```
-
-### Sell Limit Order
-Place sell order at specific price or higher.
+### Limit Order
+Place sell order at specific price.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.002 --price 95000
 ```
 
-## Stop Market Orders (Algo)
-
-### Sell Stop Market (Protective Stop for Longs)
-Triggers market sell when price drops to trigger price.
+### Stop Market Order (Protective Stop)
+Triggers market sell when price drops to trigger price (protects long position).
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type STOP_MARKET --quantity 0.002 --trigger-price 85000
 ```
 
-### Buy Stop Market (Protective Stop for Shorts)
-Triggers market buy when price rises to trigger price.
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_MARKET --quantity 0.002 --trigger-price 95000
-```
-
-## Take Profit Market Orders (Algo)
-
-### Sell Take Profit Market
+### Take Profit Market Order
 Triggers market sell when price rises to take profit.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type TAKE_PROFIT_MARKET --quantity 0.002 --trigger-price 95000
 ```
 
-### Buy Take Profit Market
-Triggers market buy when price drops to take profit.
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type TAKE_PROFIT_MARKET --quantity 0.002 --trigger-price 85000
-```
-
-## Stop Limit Orders (Algo)
-
-### Sell Stop Limit
+### Stop Limit Order
 Triggers limit order when price reaches stop trigger.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type STOP --quantity 0.002 --trigger-price 85000 --price 84500
 ```
 
-### Buy Stop Limit
-Triggers limit order when price reaches stop trigger.
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type STOP --quantity 0.002 --trigger-price 95000 --price 95500
-```
-
-## Take Profit Limit Orders (Algo)
-
-### Sell Take Profit Limit
+### Take Profit Limit Order
 Triggers limit order to take profit at specific price.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type TAKE_PROFIT --quantity 0.002 --trigger-price 95000 --price 95500
 ```
 
-### Buy Take Profit Limit
-Triggers limit order to take profit at specific price.
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type TAKE_PROFIT --quantity 0.002 --trigger-price 85000 --price 84500
-```
-
-## Trailing Stop Market Orders (Algo)
-
-### Sell Trailing Stop
+### Trailing Stop Market Order
 Follows price up by callback rate, triggers when price drops by that percentage.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type TRAILING_STOP_MARKET --quantity 0.002 --callback-rate 1.5
-```
-
-### Buy Trailing Stop
-Follows price down by callback rate, triggers when price rises by that percentage.
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type TRAILING_STOP_MARKET --quantity 0.002 --callback-rate 1.5
 ```
 
 ### Trailing Stop with Activation Price
@@ -118,7 +66,9 @@ Only activates trailing when price reaches activation price.
 uv run python cli.py --symbol BTCUSDT --side SELL --type TRAILING_STOP_MARKET --quantity 0.002 --callback-rate 1.5 --activate-price 92000
 ```
 
-## Order Management
+## 4. View Orders
+
+After placing orders, view them to confirm.
 
 ### List Open Orders
 View all active orders waiting to be filled.
@@ -133,18 +83,21 @@ uv run python cli.py --symbol BTCUSDT --orders close
 ```
 
 ### List All Orders
-View complete order history (open + closed).
+View complete order history.
 ```bash
 uv run python cli.py --symbol BTCUSDT --orders all
 ```
 
-### Cancel Order
-Cancel specific order by ID.
+## 5. Cancel Order
+
+Cancel a specific order using its ID.
 ```bash
 uv run python cli.py --symbol BTCUSDT --cancel 12345678
 ```
 
-## Position Management
+## 6. View Positions
+
+After orders are filled, check your positions.
 
 ### View All Positions
 Display all open positions across symbols.
@@ -158,15 +111,16 @@ Display position for a specific trading pair.
 uv run python cli.py --symbol BTCUSDT --positions
 ```
 
-### Close Position
-Automatically close entire position for symbol.
+## 7. Close Position
+
+Automatically close entire position for a symbol.
 ```bash
 uv run python cli.py --symbol BTCUSDT --close-position
 ```
 
-## Advanced Options
+## 8. Advanced Options
 
-### Using Mark Price (Instead of Contract Price)
+### Using Mark Price
 Use mark price for trigger instead of last price.
 ```bash
 uv run python cli.py --symbol BTCUSDT --side SELL --type STOP_MARKET --quantity 0.002 --trigger-price 85000 --working-type MARK_PRICE
@@ -178,10 +132,10 @@ Adds price protection to prevent trigger during extreme volatility.
 uv run python cli.py --symbol BTCUSDT --side SELL --type STOP_MARKET --quantity 0.002 --trigger-price 85000 --price-protect
 ```
 
-## Help
+## 9. Help
 
-### View All Options
-Display complete list of available commands and arguments.
+View all available commands and options.
 ```bash
 uv run python cli.py --help
 ```
+
