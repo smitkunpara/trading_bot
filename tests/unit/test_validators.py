@@ -86,11 +86,6 @@ class TestOrderTypeValidation:
         result = OrderValidator.validate_order_type("LIMIT")
         assert result.is_valid is True
     
-    def test_valid_stop_limit(self):
-        """Test valid STOP_LIMIT type."""
-        result = OrderValidator.validate_order_type("STOP_LIMIT")
-        assert result.is_valid is True
-    
     def test_invalid_type(self):
         """Test invalid order type."""
         result = OrderValidator.validate_order_type("TRAILING")
@@ -197,36 +192,6 @@ class TestPriceValidation:
         assert "maximum" in result.error_message.lower()
 
 
-class TestStopPriceValidation:
-    """Tests for stop price validation."""
-    
-    def test_stop_price_required_for_stop_limit(self):
-        """Test that stop price is required for STOP_LIMIT orders."""
-        result = OrderValidator.validate_stop_price(None, "STOP_LIMIT")
-        assert result.is_valid is False
-        assert "required" in result.error_message.lower()
-    
-    def test_stop_price_not_required_for_market(self):
-        """Test that stop price is not required for MARKET orders."""
-        result = OrderValidator.validate_stop_price(None, "MARKET")
-        assert result.is_valid is True
-    
-    def test_valid_stop_price(self):
-        """Test valid stop price."""
-        result = OrderValidator.validate_stop_price(50000.0, "STOP_LIMIT")
-        assert result.is_valid is True
-    
-    def test_stop_price_zero(self):
-        """Test zero stop price rejection."""
-        result = OrderValidator.validate_stop_price(0, "STOP_LIMIT")
-        assert result.is_valid is False
-    
-    def test_stop_price_negative(self):
-        """Test negative stop price rejection."""
-        result = OrderValidator.validate_stop_price(-100, "STOP_LIMIT")
-        assert result.is_valid is False
-
-
 class TestFullOrderValidation:
     """Tests for complete order validation."""
     
@@ -258,21 +223,6 @@ class TestFullOrderValidation:
         assert params is not None
         assert params.price == 3000.0
     
-    def test_valid_stop_limit_order(self):
-        """Test valid stop-limit order validation."""
-        is_valid, params, errors = OrderValidator.validate_order(
-            symbol="BTCUSDT",
-            side="BUY",
-            order_type="STOP_LIMIT",
-            quantity=0.01,
-            price=55000.0,
-            stop_price=54000.0
-        )
-        assert is_valid is True
-        assert params is not None
-        assert params.price == 55000.0
-        assert params.stop_price == 54000.0
-    
     def test_invalid_order_missing_price(self):
         """Test limit order without price."""
         is_valid, params, errors = OrderValidator.validate_order(
@@ -284,19 +234,6 @@ class TestFullOrderValidation:
         assert is_valid is False
         assert params is None
         assert len(errors) > 0
-    
-    def test_invalid_stop_limit_missing_stop_price(self):
-        """Test stop-limit order without stop price."""
-        is_valid, params, errors = OrderValidator.validate_order(
-            symbol="BTCUSDT",
-            side="BUY",
-            order_type="STOP_LIMIT",
-            quantity=0.01,
-            price=55000.0
-        )
-        assert is_valid is False
-        assert params is None
-        assert any("Stop price" in err for err in errors)
     
     def test_multiple_validation_errors(self):
         """Test order with multiple errors."""

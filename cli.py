@@ -63,12 +63,14 @@ def display_order_result(result: OrderResult):
 def main(
     symbol: Optional[str] = typer.Option(None, help="Trading pair symbol (e.g., BTCUSDT)"),
     side: Optional[str] = typer.Option(None, help="Order side: BUY or SELL"),
-    order_type: Optional[str] = typer.Option(None, "--type", help="Order type: MARKET, LIMIT, or STOP_LIMIT"),
+    order_type: Optional[str] = typer.Option(None, "--type", help="Order type: MARKET or LIMIT"),
     quantity: Optional[float] = typer.Option(None, help="Order quantity"),
-    price: Optional[float] = typer.Option(None, help="Limit price (required for LIMIT/STOP_LIMIT)"),
-    stop_price: Optional[float] = typer.Option(None, help="Stop price (required for STOP_LIMIT)"),
+    price: Optional[float] = typer.Option(None, help="Limit price (required for LIMIT orders)"),
+    stop_price: Optional[float] = typer.Option(None, help="Stop price (not supported - Binance requires Algo Order API)"),
     orders: Optional[str] = typer.Option(None, help="List orders: 'open', 'close', or 'all'"),
     cancel: Optional[int] = typer.Option(None, help="Order ID to cancel"),
+    positions: bool = typer.Option(False, "--positions", help="Show open positions"),
+    close_position: bool = typer.Option(False, "--close-position", help="Close position for given symbol"),
     account: bool = typer.Option(False, "--account", help="Show account information"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug logging")
 ):
@@ -81,6 +83,8 @@ def main(
     - Place Order: Provide --symbol, --side, --type, --quantity (plus --price/--stop-price if needed)
     - List Orders: Provide --symbol and --orders (open/close/all)
     - Cancel Order: Provide --symbol and --cancel (order ID)
+    - Show Positions: Provide --positions
+    - Close Position: Provide --symbol and --close-position
     - Account Info: Provide --account
     """
     
@@ -121,7 +125,75 @@ def main(
             console.print(table)
             return
 
-        # --- 2. List Orders (Open / History) ---
+        # --- 2. Show Positions ---
+        if positions:
+            from bot.client import BinanceClient
+            client = BinanceClient()
+            
+            pos_list = client.get_position_info(symbol if symbol else None)
+            
+            # Filter out positions with no exposure
+            active_positions = [p for p in pos_list if float(p.get("positionAmt", 0)) != 0]
+            
+            if not active_positions:
+                console.print(Panel("No open positions", border_style="yellow"))
+                return
+            
+            table = Table(title="📊 Open Positions", show_header=True, header_style="bold cyan")
+            table.add_column("Symbol", style="cyan")
+            table.add_column("Side", style="magenta")
+            table.add_column("Size", style="yellow")
+            table.add_column("Entry Price", style="green")
+            table.add_column("Mark Price", style="white")
+            table.add_column("Unrealized PNL", style="bold")
+            table.add_column("Leverage", style="dim")
+            
+            for pos in active_positions:
+                position_amt = float(pos.get("positionAmt", 0))
+                unrealized_pnl = float(pos.get("unRealizedProfit", 0))
+                pnl_color = "green" if unrealized_pnl >= 0 else "red"
+                side = "LONG" if position_amt > 0 else "SHORT"
+                side_color = "green" if position_amt > 0 else "red"
+                
+                table.add_row(
+                    pos.get("symbol"),
+                    f"[{side_color}]{side}[/{side_color}]",
+                    f"{abs(position_amt)}",
+                    f"{float(pos.get('entryPrice', 0)):.2f}",
+                    f"{float(pos.get('markPrice', 0)):.2f}",
+                    f"[{pnl_color}]{unrealized_pnl:.2f}[/{pnl_color}]",
+                    pos.get("leverage", "N/A")
+                )
+            
+            console.print(table)
+            return
+
+        # --- 3. Close Position ---
+        if close_position:
+            if not symbol:
+                console.print(Panel("[bold red]Error:[/bold red] --symbol is required to close position.", border_style="red"))
+                sys.exit(1)
+            
+            from bot.client import BinanceClient
+            client = BinanceClient()
+            
+            try:
+                result = client.close_position(symbol)
+                console.print(Panel(
+                    f"[bold green]Position closed successfully![/bold green]\n\nOrder ID: {result.get('orderId')}",
+                    title="✅ Success",
+                    border_style="green"
+                ))
+            except BinanceClientError as e:
+                console.print(Panel(
+                    f"[bold red]Failed to close position![/bold red]\n\n{e}",
+                    title="❌ Error",
+                    border_style="red"
+                ))
+                sys.exit(1)
+            return
+
+        # --- 4. List Orders (Open / History) ---
         if orders:
             if not symbol:
                 console.print(Panel("[bold red]Error:[/bold red] --symbol is required to list orders.", border_style="red"))
@@ -131,10 +203,13 @@ def main(
             if orders_mode == 'open':
                 title = f"⏳ Open Orders ({symbol.upper()})"
                 fetched_orders = manager.get_open_orders(symbol)
-            elif orders_mode in ['close', 'all']:
-                # Note: 'all' usually fetches everything (open + history). 'close' isn't explicitly distinct in API mostly, 
-                # but we can treat 'close' and 'all' as fetching history for this implementation.
-                title = f"📜 Order History ({symbol.upper()})"
+            elif orders_mode == 'close':
+                title = f"🔒 Closed Orders ({symbol.upper()})"
+                all_orders = manager.get_order_history(symbol)
+                # Filter only closed orders (exclude NEW and PARTIALLY_FILLED)
+                fetched_orders = [o for o in all_orders if o.get("status") not in ["NEW", "PARTIALLY_FILLED"]]
+            elif orders_mode == 'all':
+                title = f"📜 All Orders ({symbol.upper()})"
                 fetched_orders = manager.get_order_history(symbol)
             else:
                 console.print(Panel(f"[bold red]Error:[/bold red] Invalid value for --orders. Use 'open', 'close', or 'all'.", border_style="red"))
@@ -172,7 +247,7 @@ def main(
             console.print(table)
             return
 
-        # --- 3. Cancel Order ---
+        # --- 5. Cancel Order ---
         if cancel:
             if not symbol:
                 console.print(Panel("[bold red]Error:[/bold red] --symbol is required to cancel an order.", border_style="red"))
@@ -182,7 +257,7 @@ def main(
             display_order_result(result)
             sys.exit(0 if result.success else 1)
 
-        # --- 4. Place Order ---
+        # --- 6. Place Order ---
         if symbol and side and order_type and quantity:
             # Display summary
             table = Table(title="📝 Order Request Summary", show_header=True, header_style="bold cyan")
@@ -213,7 +288,7 @@ def main(
             display_order_result(result)
             sys.exit(0 if result.success else 1)
 
-        # --- 5. Price Check & Suggestions ---
+        # --- 7. Price Check & Suggestions ---
         if symbol:
             current_price = manager.get_current_price(symbol.upper())
             

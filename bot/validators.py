@@ -18,7 +18,6 @@ class OrderType(str, Enum):
     """Order type enumeration."""
     MARKET = "MARKET"
     LIMIT = "LIMIT"
-    STOP_LIMIT = "STOP_LIMIT"
 
 
 @dataclass
@@ -109,7 +108,7 @@ class OrderValidator:
         Validate order type.
         
         Args:
-            order_type: Type of order (MARKET, LIMIT, STOP_LIMIT)
+            order_type: Type of order (MARKET, LIMIT, STOP_MARKET)
         
         Returns:
             ValidationResult with status and error message if invalid
@@ -192,8 +191,8 @@ class OrderValidator:
         """
         order_type = order_type.upper().strip() if order_type else ""
         
-        # Price is required for LIMIT and STOP_LIMIT orders
-        if order_type in ["LIMIT", "STOP_LIMIT"]:
+        # Price is required for LIMIT orders only
+        if order_type == "LIMIT":
             if price is None:
                 return ValidationResult(
                     False, 
@@ -219,37 +218,6 @@ class OrderValidator:
                     False, 
                     f"Price {p} exceeds maximum: {cls.MAX_PRICE}"
                 )
-        
-        return ValidationResult(True)
-    
-    @classmethod
-    def validate_stop_price(cls, stop_price: Optional[float], order_type: str) -> ValidationResult:
-        """
-        Validate stop price for stop-limit orders.
-        
-        Args:
-            stop_price: Stop trigger price
-            order_type: Type of order
-        
-        Returns:
-            ValidationResult with status and error message if invalid
-        """
-        order_type = order_type.upper().strip() if order_type else ""
-        
-        if order_type == "STOP_LIMIT":
-            if stop_price is None:
-                return ValidationResult(
-                    False, 
-                    "Stop price is required for STOP_LIMIT orders"
-                )
-            
-            try:
-                sp = float(stop_price)
-            except (ValueError, TypeError):
-                return ValidationResult(False, f"Invalid stop price: {stop_price}. Must be a number")
-            
-            if sp <= 0:
-                return ValidationResult(False, "Stop price must be greater than 0")
         
         return ValidationResult(True)
     
@@ -302,10 +270,6 @@ class OrderValidator:
         if not price_result.is_valid:
             errors.append(price_result.error_message)
         
-        stop_result = cls.validate_stop_price(stop_price, order_type)
-        if not stop_result.is_valid:
-            errors.append(stop_result.error_message)
-        
         if errors:
             return False, None, errors
         
@@ -316,7 +280,7 @@ class OrderValidator:
             order_type=OrderType(order_type.upper().strip()),
             quantity=float(quantity),
             price=float(price) if price is not None else None,
-            stop_price=float(stop_price) if stop_price is not None else None
+            stop_price=None
         )
         
         return True, order_params, []

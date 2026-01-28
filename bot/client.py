@@ -213,10 +213,10 @@ class BinanceClient:
         Args:
             symbol: Trading pair symbol (e.g., BTCUSDT)
             side: Order side (BUY or SELL)
-            order_type: Order type (MARKET, LIMIT, STOP)
+            order_type: Order type (MARKET or LIMIT)
             quantity: Order quantity
             price: Limit price (required for LIMIT orders)
-            stop_price: Stop price (for STOP orders)
+            stop_price: Not supported (requires Algo Order API)
             time_in_force: Time in force (GTC, IOC, FOK)
         
         Returns:
@@ -232,11 +232,6 @@ class BinanceClient:
         # Handle different order types
         if order_type.upper() == "LIMIT":
             params["price"] = price
-            params["timeInForce"] = time_in_force
-        elif order_type.upper() == "STOP_LIMIT":
-            params["type"] = "STOP"
-            params["price"] = price
-            params["stopPrice"] = stop_price
             params["timeInForce"] = time_in_force
         
         self.logger.info(f"Placing {order_type} order: {side} {quantity} {symbol}")
@@ -291,6 +286,56 @@ class BinanceClient:
             "limit": limit
         }
         return self._request("GET", "/allOrders", params)
+    
+    def get_position_info(self, symbol: Optional[str] = None) -> list:
+        """
+        Get position information.
+        
+        Args:
+            symbol: Optional trading pair symbol
+        
+        Returns:
+            List of position information
+        """
+        params = {}
+        if symbol:
+            params["symbol"] = symbol.upper()
+        return self._request("GET", "/fapi/v2/positionRisk", params)
+    
+    def close_position(self, symbol: str, position_side: str = "BOTH") -> dict:
+        """
+        Close position by placing a MARKET order in opposite direction.
+        
+        Args:
+            symbol: Trading pair symbol
+            position_side: Position side (BOTH for one-way mode, LONG/SHORT for hedge mode)
+        
+        Returns:
+            Order response data
+        """
+        # Get current position to determine quantity and side
+        positions = self.get_position_info(symbol)
+        
+        for position in positions:
+            if position.get("symbol") == symbol.upper():
+                position_amt = float(position.get("positionAmt", 0))
+                
+                if position_amt == 0:
+                    raise BinanceClientError("No open position for this symbol")
+                
+                # Determine side to close position
+                side = "SELL" if position_amt > 0 else "BUY"
+                quantity = abs(position_amt)
+                
+                # Place market order to close position
+                return self.place_order(
+                    symbol=symbol,
+                    side=side,
+                    order_type="MARKET",
+                    quantity=quantity
+                )
+        
+        raise BinanceClientError(f"Position not found for {symbol}")
     
     def close(self):
         """Close the HTTP client."""

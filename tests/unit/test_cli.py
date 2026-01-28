@@ -122,12 +122,12 @@ class TestCLI:
         }]
         mock_manager_class.return_value = mock_manager
         
-        # Test 'all' mapping to history
+        # Test 'all' shows all orders
         result = runner.invoke(app, ["--symbol", "BTCUSDT", "--orders", "all"])
         
         assert result.exit_code == 0
         assert "222" in result.output
-        assert "Order History" in result.output
+        assert "All Orders" in result.output
 
     @patch('cli.OrderManager')
     def test_cancel_order(self, mock_manager_class):

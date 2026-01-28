@@ -7,10 +7,12 @@ A Python CLI trading bot for placing orders on Binance Futures Testnet (USDT-M).
 - ✅ **Single Entry Point CLI**: Intuitive usage with flags.
 - ✅ Place **Market** and **Limit** orders.
 - ✅ Support both **BUY** and **SELL** sides.
-- ✅ **Stop-Limit** orders (Bonus feature).
+- ✅ **Position Management**: View open positions and close them with a single command.
 - ✅ **Order Management**: List open/closed orders and cancel active ones.
 - ✅ Input validation with clear error messages.
 - ✅ Comprehensive logging to file.
+
+**Note:** Stop-Market and Stop-Limit orders require Binance Algo Order API endpoints, which are not currently implemented in this bot.
 
 
 ## Setup
@@ -68,11 +70,6 @@ uv run python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.002
 uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.002 --price 50000
 ```
 
-**Stop-Limit Order:**
-```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_LIMIT --quantity 0.002 --price 55500 --stop-price 55000
-```
-
 ### 3. Manage Orders
 
 **List Open Orders:**
@@ -80,7 +77,12 @@ uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_LIMIT --quantity 0.
 uv run python cli.py --symbol BTCUSDT --orders open
 ```
 
-**List Order History (includes both open/closed):**
+**List Closed Orders (FILLED/CANCELED only):**
+```bash
+uv run python cli.py --symbol BTCUSDT --orders close
+```
+
+**List All Orders (both open and closed):**
 ```bash
 uv run python cli.py --symbol BTCUSDT --orders all
 ```
@@ -90,13 +92,32 @@ uv run python cli.py --symbol BTCUSDT --orders all
 uv run python cli.py --symbol BTCUSDT --cancel 12345678
 ```
 
-### 4. Account Info
+### 4. Position Management
+
+**View All Open Positions:**
+```bash
+uv run python cli.py --positions
+```
+
+**View Positions for Specific Symbol:**
+```bash
+uv run python cli.py --symbol BTCUSDT --positions
+```
+
+**Close Position:**
+```bash
+uv run python cli.py --symbol BTCUSDT --close-position
+```
+
+> **Note:** To close a position, you don't need to specify the quantity or side. The bot automatically detects your current position and places a MARKET order in the opposite direction to close it. Each position is identified by its symbol, and closing is done automatically based on the position size.
+
+### 5. Account Info
 
 ```bash
 uv run python cli.py --account
 ```
 
-### 5. Help
+### 6. Help
 
 View all available options:
 
@@ -116,13 +137,39 @@ uv sync --group dev
 
 ## Running Tests
 
-```bash
-# Run all tests
-uv run pytest
+This project has two test suites:
 
-# Run with verbose output
+### Unit Tests (Mock)
+Fast tests using mocked dependencies (no API calls):
+
+```bash
+# Run unit tests
+uv run pytest tests/unit/ -v
+```
+
+### Integration Tests (Real API)
+Tests that make actual calls to Binance Futures Testnet:
+
+```bash
+# Run integration tests
+uv run pytest tests/integration/ -v -s
+```
+
+**Note:** Integration tests require valid API credentials in `.env` and will place/cancel real orders on the testnet.
+
+### Run All Tests
+
+```bash
+# Run all tests (unit + integration)
 uv run pytest -v
 ```
+
+**Test Coverage:**
+- ✅ 62 unit tests (mock)
+- ✅ 4 integration tests (real API)
+- **Total: 66 tests**
+
+See [tests/README.md](tests/README.md) for detailed test documentation.
 
 ## Assumptions
 

@@ -189,77 +189,6 @@ class OrderManager:
             self.logger.error(f"Failed to place LIMIT order: {e}")
             return OrderResult(success=False, error_message=str(e), raw_response=e.response)
     
-    def place_stop_limit_order(
-        self,
-        symbol: str,
-        side: str,
-        quantity: float,
-        price: float,
-        stop_price: float,
-        time_in_force: str = "GTC"
-    ) -> OrderResult:
-        """
-        Place a stop-limit order.
-        
-        Args:
-            symbol: Trading pair symbol
-            side: Order side (BUY or SELL)
-            quantity: Order quantity
-            price: Limit price
-            stop_price: Stop trigger price
-            time_in_force: Time in force
-        
-        Returns:
-            OrderResult with order details
-        """
-        self.logger.info(
-            f"Placing STOP-LIMIT order: {side} {quantity} {symbol} @ {price} (stop: {stop_price})"
-        )
-        
-        # Get current price for validation
-        try:
-            current_price = self.get_current_price(symbol)
-            if not current_price:
-                return OrderResult(success=False, error_message="Could not fetch current price for validation")
-        except Exception as e:
-            self.logger.error(f"Failed to get current price: {e}")
-            return OrderResult(success=False, error_message="Could not fetch current price for validation")
-        
-        # Validate inputs
-        is_valid, order_params, errors = OrderValidator.validate_order(
-            symbol=symbol,
-            side=side,
-            order_type="STOP_LIMIT",
-            quantity=quantity,
-            price=price,
-            stop_price=stop_price,
-            current_price=current_price
-        )
-        
-        if not is_valid:
-            error_msg = "; ".join(errors)
-            self.logger.error(f"Validation failed: {error_msg}")
-            return OrderResult(success=False, error_message=error_msg)
-        
-        try:
-            response = self.client.place_order(
-                symbol=order_params.symbol,
-                side=order_params.side.value,
-                order_type="STOP_LIMIT",
-                quantity=order_params.quantity,
-                price=order_params.price,
-                stop_price=order_params.stop_price,
-                time_in_force=time_in_force
-            )
-            
-            result = self._parse_order_response(response)
-            self.logger.info(f"STOP-LIMIT order placed successfully. Order ID: {result.order_id}")
-            return result
-            
-        except BinanceClientError as e:
-            self.logger.error(f"Failed to place STOP-LIMIT order: {e}")
-            return OrderResult(success=False, error_message=str(e), raw_response=e.response)
-    
     def place_order(
         self,
         symbol: str,
@@ -275,10 +204,10 @@ class OrderManager:
         Args:
             symbol: Trading pair symbol
             side: Order side (BUY or SELL)
-            order_type: Order type (MARKET, LIMIT, STOP_LIMIT)
+            order_type: Order type (MARKET or LIMIT)
             quantity: Order quantity
-            price: Limit price (for LIMIT/STOP_LIMIT)
-            stop_price: Stop price (for STOP_LIMIT)
+            price: Limit price (for LIMIT orders)
+            stop_price: Not supported (requires Algo Order API)
         
         Returns:
             OrderResult with order details
@@ -289,12 +218,10 @@ class OrderManager:
             return self.place_market_order(symbol, side, quantity)
         elif order_type == "LIMIT":
             return self.place_limit_order(symbol, side, quantity, price)
-        elif order_type == "STOP_LIMIT":
-            return self.place_stop_limit_order(symbol, side, quantity, price, stop_price)
         else:
             return OrderResult(
                 success=False,
-                error_message=f"Unsupported order type: {order_type}"
+                error_message=f"Unsupported order type: {order_type}. Supported types: MARKET, LIMIT"
             )
     
     def get_current_price(self, symbol: str) -> Optional[float]:
