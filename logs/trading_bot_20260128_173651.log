@@ -1,0 +1,8 @@
+2026-01-28 17:36:51 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_173651.log
+2026-01-28 17:36:51 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-28 17:36:51 | INFO     | trading_bot:place_order:133 | Processing order: BUY 0.002 BTCUSDT (STOP_LIMIT)
+2026-01-28 17:36:51 | INFO     | trading_bot:place_stop_limit_order:195 | Placing STOP-LIMIT order: BUY 0.002 BTCUSDT @ 55000.0 (stop: 54000.0)
+2026-01-28 17:36:51 | INFO     | trading_bot:place_order:243 | Placing STOP_LIMIT order: BUY 0.002 BTCUSDT
+2026-01-28 17:36:51 | INFO     | trading_bot:_request:159 | API Request: POST /fapi/v1/order
+2026-01-28 17:36:52 | ERROR    | trading_bot:_handle_response:122 | API Error [-4120]: Order type not supported for this endpoint. Please use the Algo Order API endpoints instead.
+2026-01-28 17:36:52 | ERROR    | trading_bot:place_stop_limit_order:230 | Failed to place STOP-LIMIT order: Binance API Error [-4120]: Order type not supported for this endpoint. Please use the Algo Order API endpoints instead.

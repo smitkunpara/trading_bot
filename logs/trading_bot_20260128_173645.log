@@ -1,0 +1,7 @@
+2026-01-28 17:36:45 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_173645.log
+2026-01-28 17:36:45 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-28 17:36:45 | INFO     | trading_bot:place_order:133 | Processing order: SELL 0.002 BTCUSDT (LIMIT)
+2026-01-28 17:36:45 | INFO     | trading_bot:place_limit_order:138 | Placing LIMIT order: SELL 0.002 BTCUSDT @ 100000.0
+2026-01-28 17:36:45 | INFO     | trading_bot:place_order:243 | Placing LIMIT order: SELL 0.002 BTCUSDT
+2026-01-28 17:36:45 | INFO     | trading_bot:_request:159 | API Request: POST /fapi/v1/order
+2026-01-28 17:36:45 | INFO     | trading_bot:place_limit_order:165 | LIMIT order placed successfully. Order ID: 12013080293

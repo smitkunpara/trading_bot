@@ -1,0 +1,7 @@
+2026-01-28 17:50:37 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_175037.log
+2026-01-28 17:50:37 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-28 17:50:37 | INFO     | trading_bot:place_order:133 | Processing order: SELL 0.3 BTCUSDT (MARKET)
+2026-01-28 17:50:37 | INFO     | trading_bot:place_market_order:86 | Placing MARKET order: SELL 0.3 BTCUSDT
+2026-01-28 17:50:37 | INFO     | trading_bot:place_order:246 | Placing MARKET order: SELL 0.3 BTCUSDT
+2026-01-28 17:50:37 | INFO     | trading_bot:_request:162 | API Request: POST /fapi/v1/order
+2026-01-28 17:50:37 | INFO     | trading_bot:place_market_order:110 | MARKET order placed successfully. Order ID: 12013168584

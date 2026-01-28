@@ -1,0 +1,9 @@
+2026-01-28 17:44:57 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_174457.log
+2026-01-28 17:44:57 | INFO     | trading_bot:place_order:133 | Processing order: BUY 0.01 BTCUSDT (MARKET)
+2026-01-28 17:44:57 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_174457.log
+2026-01-28 17:44:57 | INFO     | trading_bot:place_order:133 | Processing order: SELL 0.1 ETHUSDT (LIMIT)
+2026-01-28 17:44:57 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_174457.log
+2026-01-28 17:44:57 | INFO     | trading_bot:place_order:133 | Processing order: BUY 1000.0 BTCUSDT (MARKET)
+2026-01-28 17:44:57 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_174457.log
+2026-01-28 17:44:57 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_174457.log
+2026-01-28 17:44:57 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_174457.log

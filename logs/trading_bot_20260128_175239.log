@@ -1,0 +1,7 @@
+2026-01-28 17:52:39 | INFO     | trading_bot:setup_logging:61 | Logging initialized. Log file: logs/trading_bot_20260128_175239.log
+2026-01-28 17:52:39 | INFO     | trading_bot:__init__:73 | Binance client initialized with base URL: https://testnet.binancefuture.com
+2026-01-28 17:52:39 | INFO     | trading_bot:place_order:133 | Processing order: BUY 0.5 BTCUSDT (MARKET)
+2026-01-28 17:52:39 | INFO     | trading_bot:place_market_order:86 | Placing MARKET order: BUY 0.5 BTCUSDT
+2026-01-28 17:52:39 | INFO     | trading_bot:place_order:246 | Placing MARKET order: BUY 0.5 BTCUSDT
+2026-01-28 17:52:39 | INFO     | trading_bot:_request:162 | API Request: POST /fapi/v1/order
+2026-01-28 17:52:40 | INFO     | trading_bot:place_market_order:110 | MARKET order placed successfully. Order ID: 12013183217
