@@ -63,10 +63,15 @@ def display_order_result(result: OrderResult):
 def main(
     symbol: Optional[str] = typer.Option(None, help="Trading pair symbol (e.g., BTCUSDT)"),
     side: Optional[str] = typer.Option(None, help="Order side: BUY or SELL"),
-    order_type: Optional[str] = typer.Option(None, "--type", help="Order type: MARKET or LIMIT"),
+    order_type: Optional[str] = typer.Option(None, "--type", help="Order type: MARKET, LIMIT, STOP_MARKET, TAKE_PROFIT_MARKET, STOP, TAKE_PROFIT, TRAILING_STOP_MARKET"),
     quantity: Optional[float] = typer.Option(None, help="Order quantity"),
-    price: Optional[float] = typer.Option(None, help="Limit price (required for LIMIT orders)"),
-    stop_price: Optional[float] = typer.Option(None, help="Stop price (not supported - Binance requires Algo Order API)"),
+    price: Optional[float] = typer.Option(None, help="Limit price (required for LIMIT, STOP, TAKE_PROFIT orders)"),
+    stop_price: Optional[float] = typer.Option(None, help="Trigger price (alias for --trigger-price, for algo orders)"),
+    trigger_price: Optional[float] = typer.Option(None, "--trigger-price", help="Trigger price (for algo orders: STOP_MARKET, TAKE_PROFIT_MARKET, STOP, TAKE_PROFIT)"),
+    callback_rate: Optional[float] = typer.Option(None, "--callback-rate", help="Callback rate for TRAILING_STOP_MARKET (0.1-10, representing 0.1%-10%)"),
+    activate_price: Optional[float] = typer.Option(None, "--activate-price", help="Activation price for TRAILING_STOP_MARKET"),
+    working_type: str = typer.Option("CONTRACT_PRICE", "--working-type", help="Working type: CONTRACT_PRICE or MARK_PRICE"),
+    price_protect: bool = typer.Option(False, "--price-protect", help="Enable price protection for algo orders"),
     orders: Optional[str] = typer.Option(None, help="List orders: 'open', 'close', or 'all'"),
     cancel: Optional[int] = typer.Option(None, help="Order ID to cancel"),
     positions: bool = typer.Option(False, "--positions", help="Show open positions"),
@@ -270,8 +275,16 @@ def main(
             table.add_row("Quantity", str(quantity))
             if price is not None:
                 table.add_row("Price", str(price))
-            if stop_price is not None:
-                table.add_row("Stop Price", str(stop_price))
+            
+            # Use trigger_price if provided, otherwise fall back to stop_price
+            effective_trigger_price = trigger_price or stop_price
+            if effective_trigger_price is not None:
+                table.add_row("Trigger Price", str(effective_trigger_price))
+            if callback_rate is not None:
+                table.add_row("Callback Rate", f"{callback_rate}%")
+            if activate_price is not None:
+                table.add_row("Activate Price", str(activate_price))
+            
             console.print(table)
             console.print()
 
@@ -283,7 +296,9 @@ def main(
                 order_type=order_type,
                 quantity=quantity,
                 price=price,
-                stop_price=stop_price
+                trigger_price=effective_trigger_price,
+                callback_rate=callback_rate,
+                activate_price=activate_price
             )
             display_order_result(result)
             sys.exit(0 if result.success else 1)

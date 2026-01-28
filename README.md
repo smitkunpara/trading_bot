@@ -6,13 +6,32 @@ A Python CLI trading bot for placing orders on Binance Futures Testnet (USDT-M).
 
 - ✅ **Single Entry Point CLI**: Intuitive usage with flags.
 - ✅ Place **Market** and **Limit** orders.
+- ✅ Place **Algo Orders**: STOP_MARKET, TAKE_PROFIT_MARKET, STOP, TAKE_PROFIT, TRAILING_STOP_MARKET
 - ✅ Support both **BUY** and **SELL** sides.
 - ✅ **Position Management**: View open positions and close them with a single command.
 - ✅ **Order Management**: List open/closed orders and cancel active ones.
 - ✅ Input validation with clear error messages.
 - ✅ Comprehensive logging to file.
 
-**Note:** Stop-Market and Stop-Limit orders require Binance Algo Order API endpoints, which are not currently implemented in this bot.
+### ✅ Algo Order API Integrated
+
+**Stop and Take Profit orders are NOW supported** via the Binance Algo Order API:
+
+**Supported Order Types:**
+- `STOP_MARKET` - Stop-loss market order (triggers market order at stop price)
+- `TAKE_PROFIT_MARKET` - Take-profit market order
+- `STOP` - Stop-loss limit order (triggers limit order at stop price)
+- `TAKE_PROFIT` - Take-profit limit order
+- `TRAILING_STOP_MARKET` - Dynamic stop that follows price movement
+
+**Key Parameters:**
+- `--trigger-price` - Price that triggers the algo order
+- `--callback-rate` - For TRAILING_STOP_MARKET (0.1-10, representing 0.1%-10%)
+- `--activate-price` - Activation price for TRAILING_STOP_MARKET
+- `--working-type` - CONTRACT_PRICE (default) or MARK_PRICE
+- `--price-protect` - Enable price protection
+
+**Reference**: [Binance Algo Order API Documentation](https://developers.binance.com/docs/derivatives/usds-margined-futures/trade/rest-api/New-Algo-Order)
 
 
 ## Setup
@@ -67,7 +86,37 @@ uv run python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.002
 
 **Limit Order:**
 ```bash
-uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.002 --price 50000
+uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.002 --price 95000
+```
+
+**Stop-Market Order (Algo Order):**
+```bash
+# BUY STOP: Triggers when price goes UP to trigger price (protective stop for shorts)
+uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_MARKET --quantity 0.002 --trigger-price 95000
+
+# SELL STOP: Triggers when price goes DOWN to trigger price (protective stop for longs)
+uv run python cli.py --symbol BTCUSDT --side SELL --type STOP_MARKET --quantity 0.002 --trigger-price 85000
+```
+
+**Take-Profit Market Order (Algo Order):**
+```bash
+# BUY TAKE_PROFIT: Triggers when price goes DOWN to trigger price
+uv run python cli.py --symbol BTCUSDT --side BUY --type TAKE_PROFIT_MARKET --quantity 0.002 --trigger-price 85000
+
+# SELL TAKE_PROFIT: Triggers when price goes UP to trigger price
+uv run python cli.py --symbol BTCUSDT --side SELL --type TAKE_PROFIT_MARKET --quantity 0.002 --trigger-price 95000
+```
+
+**Stop-Limit Order (Algo Order):**
+```bash
+# Triggers at stop price, then places limit order at specified price
+uv run python cli.py --symbol BTCUSDT --side SELL --type STOP --quantity 0.002 --trigger-price 85000 --price 84500
+```
+
+**Trailing Stop Market (Algo Order):**
+```bash
+# Follows price by callback rate %, triggers when price reverses
+uv run python cli.py --symbol BTCUSDT --side SELL --type TRAILING_STOP_MARKET --quantity 0.002 --callback-rate 1.0 --activate-price 92000
 ```
 
 ### 3. Manage Orders
@@ -170,6 +219,55 @@ uv run pytest -v
 - **Total: 66 tests**
 
 See [tests/README.md](tests/README.md) for detailed test documentation.
+
+## Project Structure
+
+```
+trading_bot/
+├── bot/
+│   ├── __init__.py
+│   ├── client.py           # Binance API wrapper (GET/POST/DELETE requests)
+│   ├── orders.py           # Order management (place/cancel/query)
+│   ├── validators.py       # Input validation (symbols, prices, quantities)
+│   └── logging_config.py   # Logging setup
+├── tests/
+│   ├── unit/              # Mock tests (fast, no API calls)
+│   │   ├── test_cli.py
+│   │   ├── test_client.py
+│   │   ├── test_orders.py
+│   │   └── test_validators.py
+│   ├── integration/       # Real API tests (requires credentials)
+│   │   ├── test_real_orders.py
+│   │   └── conftest.py
+│   └── README.md          # Test documentation
+├── cli.py                 # Main CLI entry point
+├── .env.example           # Example environment variables
+├── pyproject.toml         # Project dependencies and configuration
+└── README.md              # This file
+```
+
+## Implementation Details
+
+### API Endpoints Used
+- `GET /fapi/v1/ticker/price` - Get current market price
+- `GET /fapi/v2/account` - Get account information
+- `GET /fapi/v2/positionRisk` - Get position information
+- `POST /fapi/v1/order` - Place MARKET/LIMIT orders
+- `DELETE /fapi/v1/order` - Cancel orders
+- `GET /fapi/v1/openOrders` - List open orders
+- `GET /fapi/v1/allOrders` - Get order history
+
+### Order Types Supported
+- **MARKET**: Executes immediately at current market price
+- **LIMIT**: Executes only at specified price or better
+- **STOP_MARKET**: Algo order that triggers market order at trigger price
+- **TAKE_PROFIT_MARKET**: Algo order that triggers market order for profit taking
+- **STOP**: Algo order that triggers limit order at trigger price
+- **TAKE_PROFIT**: Algo order that triggers limit order for profit taking
+- **TRAILING_STOP_MARKET**: Dynamic stop that follows price by callback rate
+
+### Order Types NOT Supported
+- None - All major order types are now supported via regular and algo order APIs!
 
 ## Assumptions
 

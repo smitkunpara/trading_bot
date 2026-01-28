@@ -238,6 +238,111 @@ class BinanceClient:
         
         return self._request("POST", "/order", params)
     
+    def place_algo_order(
+        self,
+        symbol: str,
+        side: str,
+        order_type: str,
+        quantity: float,
+        trigger_price: float,
+        price: Optional[float] = None,
+        working_type: str = "CONTRACT_PRICE",
+        price_protect: bool = False,
+        callback_rate: Optional[float] = None,
+        activate_price: Optional[float] = None,
+        time_in_force: str = "GTC"
+    ) -> dict:
+        """
+        Place an algo order on Binance Futures.
+        
+        Args:
+            symbol: Trading pair symbol (e.g., BTCUSDT)
+            side: Order side (BUY or SELL)
+            order_type: Algo order type (STOP_MARKET, TAKE_PROFIT_MARKET, STOP, TAKE_PROFIT, TRAILING_STOP_MARKET)
+            quantity: Order quantity
+            trigger_price: Price that triggers the order (for STOP/TAKE_PROFIT types)
+            price: Limit price (required for STOP and TAKE_PROFIT, not for MARKET types)
+            working_type: MARK_PRICE or CONTRACT_PRICE (default CONTRACT_PRICE)
+            price_protect: Enable price protection (default False)
+            callback_rate: Callback rate for TRAILING_STOP_MARKET (0.1-10, representing 0.1%-10%)
+            activate_price: Activation price for TRAILING_STOP_MARKET
+            time_in_force: Time in force (GTC, IOC, FOK)
+        
+        Returns:
+            Algo order response data
+        """
+        params = {
+            "algoType": "CONDITIONAL",
+            "symbol": symbol.upper(),
+            "side": side.upper(),
+            "type": order_type.upper(),
+            "quantity": quantity,
+            "workingType": working_type,
+            "priceProtect": str(price_protect).upper()
+        }
+        
+        # Add trigger price for STOP/TAKE_PROFIT types
+        if order_type.upper() in ["STOP_MARKET", "TAKE_PROFIT_MARKET", "STOP", "TAKE_PROFIT"]:
+            params["triggerPrice"] = trigger_price
+        
+        # Add limit price for non-MARKET types
+        if order_type.upper() in ["STOP", "TAKE_PROFIT"]:
+            if price:
+                params["price"] = price
+            params["timeInForce"] = time_in_force
+        
+        # Add parameters for TRAILING_STOP_MARKET
+        if order_type.upper() == "TRAILING_STOP_MARKET":
+            if callback_rate:
+                params["callbackRate"] = callback_rate
+            if activate_price:
+                params["activatePrice"] = activate_price
+        
+        self.logger.info(f"Placing ALGO {order_type} order: {side} {quantity} {symbol} @ trigger={trigger_price}")
+        
+        return self._request("POST", "/algoOrder", params)
+    
+    def cancel_algo_order(self, algo_id: int) -> dict:
+        """
+        Cancel an algo order.
+        
+        Args:
+            algo_id: Algo order ID
+        
+        Returns:
+            Cancellation response
+        """
+        params = {"algoId": algo_id}
+        return self._request("DELETE", "/algoOrder", params)
+    
+    def get_algo_order(self, algo_id: int) -> dict:
+        """
+        Query an algo order.
+        
+        Args:
+            algo_id: Algo order ID
+        
+        Returns:
+            Algo order details
+        """
+        params = {"algoId": algo_id}
+        return self._request("GET", "/algoOrder", params)
+    
+    def get_all_algo_orders(self, symbol: Optional[str] = None) -> list:
+        """
+        Get all algo orders.
+        
+        Args:
+            symbol: Optional trading pair symbol
+        
+        Returns:
+            List of algo orders
+        """
+        params = {}
+        if symbol:
+            params["symbol"] = symbol.upper()
+        return self._request("GET", "/algoOrders", params)
+    
     def cancel_order(self, symbol: str, order_id: int) -> dict:
         """
         Cancel an order.

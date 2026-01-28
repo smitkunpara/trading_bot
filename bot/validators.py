@@ -18,6 +18,12 @@ class OrderType(str, Enum):
     """Order type enumeration."""
     MARKET = "MARKET"
     LIMIT = "LIMIT"
+    # Algo Order Types
+    STOP_MARKET = "STOP_MARKET"
+    TAKE_PROFIT_MARKET = "TAKE_PROFIT_MARKET"
+    STOP = "STOP"
+    TAKE_PROFIT = "TAKE_PROFIT"
+    TRAILING_STOP_MARKET = "TRAILING_STOP_MARKET"
 
 
 @dataclass
@@ -37,6 +43,12 @@ class OrderParams:
     price: Optional[float] = None
     stop_price: Optional[float] = None
     time_in_force: str = "GTC"
+    # Algo order parameters
+    trigger_price: Optional[float] = None
+    working_type: str = "CONTRACT_PRICE"
+    price_protect: bool = False
+    callback_rate: Optional[float] = None
+    activate_price: Optional[float] = None
 
 
 class OrderValidator:
@@ -222,6 +234,72 @@ class OrderValidator:
         return ValidationResult(True)
     
     @classmethod
+    def validate_trigger_price(cls, trigger_price: Optional[float], order_type: str) -> ValidationResult:
+        """
+        Validate trigger price for algo orders.
+        
+        Args:
+            trigger_price: Trigger price
+            order_type: Type of order
+        
+        Returns:
+            ValidationResult with status and error message if invalid
+        """
+        order_type = order_type.upper().strip() if order_type else ""
+        
+        # Trigger price required for these algo order types
+        if order_type in ["STOP_MARKET", "TAKE_PROFIT_MARKET", "STOP", "TAKE_PROFIT"]:
+            if trigger_price is None:
+                return ValidationResult(
+                    False,
+                    f"Trigger price is required for {order_type} orders"
+                )
+            
+            try:
+                tp = float(trigger_price)
+            except (ValueError, TypeError):
+                return ValidationResult(False, f"Invalid trigger price: {trigger_price}. Must be a number")
+            
+            if tp <= 0:
+                return ValidationResult(False, "Trigger price must be greater than 0")
+        
+        return ValidationResult(True)
+    
+    @classmethod
+    def validate_callback_rate(cls, callback_rate: Optional[float], order_type: str) -> ValidationResult:
+        """
+        Validate callback rate for TRAILING_STOP_MARKET orders.
+        
+        Args:
+            callback_rate: Callback rate (0.1-10, representing 0.1%-10%)
+            order_type: Type of order
+        
+        Returns:
+            ValidationResult with status and error message if invalid
+        """
+        order_type = order_type.upper().strip() if order_type else ""
+        
+        if order_type == "TRAILING_STOP_MARKET":
+            if callback_rate is None:
+                return ValidationResult(
+                    False,
+                    "Callback rate is required for TRAILING_STOP_MARKET orders"
+                )
+            
+            try:
+                cr = float(callback_rate)
+            except (ValueError, TypeError):
+                return ValidationResult(False, f"Invalid callback rate: {callback_rate}. Must be a number")
+            
+            if cr < 0.1 or cr > 10:
+                return ValidationResult(
+                    False,
+                    "Callback rate must be between 0.1 and 10 (representing 0.1%-10%)"
+                )
+        
+        return ValidationResult(True)
+    
+    @classmethod
     def validate_order(
         cls,
         symbol: str,
@@ -230,7 +308,9 @@ class OrderValidator:
         quantity: float,
         price: Optional[float] = None,
         stop_price: Optional[float] = None,
-        current_price: Optional[float] = None
+        current_price: Optional[float] = None,
+        trigger_price: Optional[float] = None,
+        callback_rate: Optional[float] = None
     ) -> tuple[bool, Optional[OrderParams], list[str]]:
         """
         Validate all order parameters.
@@ -238,11 +318,13 @@ class OrderValidator:
         Args:
             symbol: Trading pair symbol
             side: Order side (BUY/SELL)
-            order_type: Order type (MARKET/LIMIT/STOP_LIMIT)
+            order_type: Order type (MARKET/LIMIT or algo types)
             quantity: Order quantity
-            price: Order price (for LIMIT orders)
-            stop_price: Stop price (for STOP_LIMIT orders)
+            price: Order price (for LIMIT/STOP/TAKE_PROFIT orders)
+            stop_price: Stop price (legacy, not used)
             current_price: Current market price for notional validation
+            trigger_price: Trigger price (for algo orders)
+            callback_rate: Callback rate (for TRAILING_STOP_MARKET)
         
         Returns:
             Tuple of (is_valid, OrderParams or None, list of error messages)
@@ -270,6 +352,16 @@ class OrderValidator:
         if not price_result.is_valid:
             errors.append(price_result.error_message)
         
+        # Validate trigger price for algo orders
+        trigger_result = cls.validate_trigger_price(trigger_price, order_type)
+        if not trigger_result.is_valid:
+            errors.append(trigger_result.error_message)
+        
+        # Validate callback rate for TRAILING_STOP_MARKET
+        callback_result = cls.validate_callback_rate(callback_rate, order_type)
+        if not callback_result.is_valid:
+            errors.append(callback_result.error_message)
+        
         if errors:
             return False, None, errors
         
@@ -280,7 +372,9 @@ class OrderValidator:
             order_type=OrderType(order_type.upper().strip()),
             quantity=float(quantity),
             price=float(price) if price is not None else None,
-            stop_price=None
+            stop_price=None,
+            trigger_price=float(trigger_price) if trigger_price is not None else None,
+            callback_rate=float(callback_rate) if callback_rate is not None else None
         )
         
         return True, order_params, []

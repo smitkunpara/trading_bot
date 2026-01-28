@@ -53,8 +53,36 @@ uv run pytest tests/integration/
 uv run pytest
 ```
 
-## ⚠️ Notes
+## 📋 Test Results
 
+All tests passing:
+- ✅ 36 validator tests + 26 other unit tests = 62 unit tests (mock)
+- ✅ 4 integration tests (real API)
+- **Total: 66 tests**
+
+**Note**: Tests cover MARKET, LIMIT orders and basic validation. Algo order tests (STOP_MARKET, TAKE_PROFIT_MARKET, etc.) can be added for comprehensive coverage.
+
+## ⚠️ Important Notes
+
+### Integration Tests
 - Integration tests will skip if credentials are missing
 - Integration tests place small orders (0.002 BTC) to minimize costs
 - Integration tests clean up after themselves (cancel orders, close positions)
+
+### Algo Orders Now Supported
+**Stop orders (STOP_MARKET, TAKE_PROFIT_MARKET, STOP, TAKE_PROFIT, TRAILING_STOP_MARKET) are NOW implemented** using the Binance Algo Order API:
+
+- Endpoint: `POST /fapi/v1/algoOrder`
+- Uses `algoType="CONDITIONAL"`
+- Requires `triggerPrice` parameter
+- Supports `workingType` (CONTRACT_PRICE or MARK_PRICE)
+- TRAILING_STOP_MARKET uses `callbackRate` and `activatePrice`
+
+**To add algo order integration tests**, create tests for:
+- Placing STOP_MARKET orders
+- Placing TAKE_PROFIT_MARKET orders
+- Placing TRAILING_STOP_MARKET orders
+- Canceling algo orders via `/fapi/v1/algoOrder`
+- Querying algo orders
+
+**Reference**: [Binance Algo Order API](https://developers.binance.com/docs/derivatives/usds-margined-futures/trade/rest-api/New-Algo-Order)
