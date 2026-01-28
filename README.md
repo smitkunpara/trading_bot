@@ -68,7 +68,7 @@ uv run python cli.py --symbol BTCUSDT --side SELL --type TRAILING_STOP_MARKET --
 uv run python cli.py --positions
 ```
 
-For more examples, see [EXAMPLES.md](EXAMPLES.md)
+For more examples, see [demo/EXAMPLES.md](demo/EXAMPLES.md) | [Watch Demo Video](demo/trading_bot_demo.mkv)
 
 ## CLI Arguments
 
