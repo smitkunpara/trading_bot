@@ -130,12 +130,13 @@ class OrderValidator:
             )
     
     @classmethod
-    def validate_quantity(cls, quantity: float) -> ValidationResult:
+    def validate_quantity(cls, quantity: float, current_price: Optional[float] = None) -> ValidationResult:
         """
         Validate order quantity.
         
         Args:
             quantity: Order quantity
+            current_price: Current market price for notional value validation
         
         Returns:
             ValidationResult with status and error message if invalid
@@ -162,6 +163,18 @@ class OrderValidator:
                 False, 
                 f"Quantity {qty} exceeds maximum: {cls.MAX_QUANTITY}"
             )
+        
+        # Check minimum notional value ($100) if price is available
+        if current_price is not None:
+            notional_value = qty * current_price
+            min_notional = 100.0  # Binance minimum notional value
+            if notional_value < min_notional:
+                min_qty_needed = min_notional / current_price
+                return ValidationResult(
+                    False,
+                    f"Order notional value (${notional_value:.2f}) is below minimum: ${min_notional}. "
+                    f"Minimum quantity needed: {min_qty_needed:.6f}"
+                )
         
         return ValidationResult(True)
     
@@ -248,7 +261,8 @@ class OrderValidator:
         order_type: str,
         quantity: float,
         price: Optional[float] = None,
-        stop_price: Optional[float] = None
+        stop_price: Optional[float] = None,
+        current_price: Optional[float] = None
     ) -> tuple[bool, Optional[OrderParams], list[str]]:
         """
         Validate all order parameters.
@@ -260,6 +274,7 @@ class OrderValidator:
             quantity: Order quantity
             price: Order price (for LIMIT orders)
             stop_price: Stop price (for STOP_LIMIT orders)
+            current_price: Current market price for notional validation
         
         Returns:
             Tuple of (is_valid, OrderParams or None, list of error messages)
@@ -279,7 +294,7 @@ class OrderValidator:
         if not type_result.is_valid:
             errors.append(type_result.error_message)
         
-        qty_result = cls.validate_quantity(quantity)
+        qty_result = cls.validate_quantity(quantity, current_price)
         if not qty_result.is_valid:
             errors.append(qty_result.error_message)
         

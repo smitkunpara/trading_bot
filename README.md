@@ -8,7 +8,6 @@ A Python CLI trading bot for placing orders on Binance Futures Testnet (USDT-M).
 - ✅ Place **Market** and **Limit** orders.
 - ✅ Support both **BUY** and **SELL** sides.
 - ✅ **Stop-Limit** orders (Bonus feature).
-- ✅ **Smart Suggestions**: Get helpful hints when checking prices.
 - ✅ **Order Management**: List open/closed orders and cancel active ones.
 - ✅ Input validation with clear error messages.
 - ✅ Comprehensive logging to file.
@@ -38,13 +37,13 @@ uv sync
 
 ### 3. Configure Environment
 
-Create a `.env` file in the project root with your credentials:
+Copy the example environment file and add your credentials:
 
-```env
-BINANCE_API_KEY=your_api_key
-BINANCE_SECRET_KEY=your_secret_key
-BINANCE_TESTNET_URL=https://testnet.binancefuture.com
+```bash
+cp .env.example .env
 ```
+
+Then edit `.env` with your actual Binance API credentials.
 
 ## Usage
 
@@ -61,17 +60,17 @@ uv run python cli.py --symbol BTCUSDT
 
 **Market Order:**
 ```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.001
+uv run python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.002
 ```
 
 **Limit Order:**
 ```bash
-uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.001 --price 50000
+uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.002 --price 50000
 ```
 
 **Stop-Limit Order:**
 ```bash
-uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_LIMIT --quantity 0.001 --price 55500 --stop-price 55000
+uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_LIMIT --quantity 0.002 --price 55500 --stop-price 55000
 ```
 
 ### 3. Manage Orders
@@ -105,6 +104,16 @@ View all available options:
 uv run python cli.py --help
 ```
 
+## Development
+
+### Install Dev Dependencies
+
+To run tests, install the development dependencies:
+
+```bash
+uv sync --group dev
+```
+
 ## Running Tests
 
 ```bash
@@ -121,3 +130,4 @@ uv run pytest -v
 2. **USDT-M Futures**: Only USDT-margined futures pairs are supported.
 3. **Symbol Format**: Symbols must end with "USDT".
 4. **Time in Force**: Default is GTC (Good Till Cancel) for limit orders.
+5. **Quantity Requirements**: Orders must meet both minimum quantity and minimum notional value ($100) requirements. The bot validates these automatically and provides helpful error messages.

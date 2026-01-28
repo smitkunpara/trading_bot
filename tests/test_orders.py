@@ -13,6 +13,8 @@ from bot.client import BinanceClient, BinanceClientError
 def mock_client():
     """Create a mock Binance client."""
     client = Mock(spec=BinanceClient)
+    # Mock the get_ticker_price method to return a valid price
+    client.get_ticker_price.return_value = {"price": "50000.00"}
     return client
 
 

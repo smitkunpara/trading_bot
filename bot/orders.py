@@ -85,12 +85,22 @@ class OrderManager:
         """
         self.logger.info(f"Placing MARKET order: {side} {quantity} {symbol}")
         
+        # Get current price for validation
+        try:
+            current_price = self.get_current_price(symbol)
+            if not current_price:
+                return OrderResult(success=False, error_message="Could not fetch current price for validation")
+        except Exception as e:
+            self.logger.error(f"Failed to get current price: {e}")
+            return OrderResult(success=False, error_message="Could not fetch current price for validation")
+        
         # Validate inputs
         is_valid, order_params, errors = OrderValidator.validate_order(
             symbol=symbol,
             side=side,
             order_type="MARKET",
-            quantity=quantity
+            quantity=quantity,
+            current_price=current_price
         )
         
         if not is_valid:
@@ -137,13 +147,23 @@ class OrderManager:
         """
         self.logger.info(f"Placing LIMIT order: {side} {quantity} {symbol} @ {price}")
         
+        # Get current price for validation
+        try:
+            current_price = self.get_current_price(symbol)
+            if not current_price:
+                return OrderResult(success=False, error_message="Could not fetch current price for validation")
+        except Exception as e:
+            self.logger.error(f"Failed to get current price: {e}")
+            return OrderResult(success=False, error_message="Could not fetch current price for validation")
+        
         # Validate inputs
         is_valid, order_params, errors = OrderValidator.validate_order(
             symbol=symbol,
             side=side,
             order_type="LIMIT",
             quantity=quantity,
-            price=price
+            price=price,
+            current_price=current_price
         )
         
         if not is_valid:
@@ -196,6 +216,15 @@ class OrderManager:
             f"Placing STOP-LIMIT order: {side} {quantity} {symbol} @ {price} (stop: {stop_price})"
         )
         
+        # Get current price for validation
+        try:
+            current_price = self.get_current_price(symbol)
+            if not current_price:
+                return OrderResult(success=False, error_message="Could not fetch current price for validation")
+        except Exception as e:
+            self.logger.error(f"Failed to get current price: {e}")
+            return OrderResult(success=False, error_message="Could not fetch current price for validation")
+        
         # Validate inputs
         is_valid, order_params, errors = OrderValidator.validate_order(
             symbol=symbol,
@@ -203,7 +232,8 @@ class OrderManager:
             order_type="STOP_LIMIT",
             quantity=quantity,
             price=price,
-            stop_price=stop_price
+            stop_price=stop_price,
+            current_price=current_price
         )
         
         if not is_valid:

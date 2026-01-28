@@ -226,7 +226,7 @@ def main(
                 
                 # Show suggestions since only symbol was provided
                 console.print("\n[dim]💡 Suggestions:[/dim]")
-                console.print(f"[dim]To place an order:[/dim] [green]--symbol {symbol} --side BUY --type MARKET --quantity 0.001[/green]")
+                console.print(f"[dim]To place an order:[/dim] [green]--symbol {symbol} --side BUY --type MARKET --quantity 0.002[/green]")
                 console.print(f"[dim]To view orders:[/dim]    [green]--symbol {symbol} --orders open[/green]")
                 console.print(f"[dim]To cancel order:[/dim]    [green]--symbol {symbol} --cancel <ID>[/green]")
             else:
