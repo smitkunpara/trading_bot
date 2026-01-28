@@ -4,13 +4,14 @@ A Python CLI trading bot for placing orders on Binance Futures Testnet (USDT-M).
 
 ## Features
 
-- ✅ Place **Market** and **Limit** orders
-- ✅ Support both **BUY** and **SELL** sides
-- ✅ **Stop-Limit** orders (Bonus feature)
-- ✅ Input validation with clear error messages
-- ✅ Comprehensive logging to file
-- ✅ Rich CLI with colored output
-- ✅ Proper error handling with custom `httpx` client
+- ✅ **Single Entry Point CLI**: Intuitive usage with flags.
+- ✅ Place **Market** and **Limit** orders.
+- ✅ Support both **BUY** and **SELL** sides.
+- ✅ **Stop-Limit** orders (Bonus feature).
+- ✅ **Smart Suggestions**: Get helpful hints when checking prices.
+- ✅ **Order Management**: List open/closed orders and cancel active ones.
+- ✅ Input validation with clear error messages.
+- ✅ Comprehensive logging to file.
 
 ## Project Structure
 
@@ -70,62 +71,61 @@ BINANCE_TESTNET_URL=https://testnet.binancefuture.com
 
 ## Usage
 
-### Place a Market Order
+All actions are performed via `cli.py` using specific flags.
+
+### 1. Check Price & Get Suggestions
+Simply provide the symbol to see the current price and helpful command suggestions.
 
 ```bash
-# BUY 0.01 BTC at market price
-uv run python cli.py order BTCUSDT BUY MARKET 0.01
-
-# SELL 0.1 ETH at market price
-uv run python cli.py order ETHUSDT SELL MARKET 0.1
+uv run python cli.py --symbol BTCUSDT
 ```
 
-### Place a Limit Order
+### 2. Place Orders
+
+**Market Order:**
+```bash
+uv run python cli.py --symbol BTCUSDT --side BUY --type MARKET --quantity 0.001
+```
+
+**Limit Order:**
+```bash
+uv run python cli.py --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.001 --price 50000
+```
+
+**Stop-Limit Order:**
+```bash
+uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_LIMIT --quantity 0.001 --price 55500 --stop-price 55000
+```
+
+### 3. Manage Orders
+
+**List Open Orders:**
+```bash
+uv run python cli.py --symbol BTCUSDT --orders open
+```
+
+**List Order History (Closed/All):**
+```bash
+uv run python cli.py --symbol BTCUSDT --orders all
+```
+
+**Cancel an Order:**
+```bash
+uv run python cli.py --symbol BTCUSDT --cancel 12345678
+```
+
+### 4. Account Info
 
 ```bash
-# BUY 0.01 BTC at $50,000
-uv run python cli.py order BTCUSDT BUY LIMIT 0.01 --price 50000
-
-# SELL 0.1 ETH at $3,500
-uv run python cli.py order ETHUSDT SELL LIMIT 0.1 --price 3500
+uv run python cli.py --account
 ```
 
-### Place a Stop-Limit Order (Bonus)
+### 5. Help
 
-```bash
-# BUY 0.01 BTC with stop at $55,000, limit at $55,500
-uv run python cli.py order BTCUSDT BUY STOP_LIMIT 0.01 --price 55500 --stop-price 55000
-```
-
-### Get Current Price
-
-```bash
-uv run python cli.py price BTCUSDT
-```
-
-### View Account Info
-
-```bash
-uv run python cli.py account
-```
-
-### Cancel an Order
-
-```bash
-uv run python cli.py cancel BTCUSDT 12345678
-```
-
-### Enable Debug Logging
-
-```bash
-uv run python cli.py order BTCUSDT BUY MARKET 0.01 --debug
-```
-
-### View Help
+View all available options:
 
 ```bash
 uv run python cli.py --help
-uv run python cli.py order --help
 ```
 
 ## Running Tests

@@ -4,20 +4,20 @@ CLI entry point for the Binance Futures Trading Bot.
 """
 
 import sys
+import datetime
 from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich import print as rprint
 
 from bot.logging_config import setup_logging, get_logger
 from bot.orders import OrderManager, OrderResult
 from bot.client import BinanceClientError
 
 
-# Initialize Typer app
+# Initialize Typer app (no subcommands, single entry point)
 app = typer.Typer(
     name="trading-bot",
     help="Binance Futures Testnet Trading Bot CLI",
@@ -26,34 +26,6 @@ app = typer.Typer(
 
 # Rich console for pretty output
 console = Console()
-
-
-def display_order_summary(
-    symbol: str,
-    side: str,
-    order_type: str,
-    quantity: float,
-    price: Optional[float] = None,
-    stop_price: Optional[float] = None
-):
-    """Display order request summary."""
-    table = Table(title="📝 Order Request Summary", show_header=True, header_style="bold cyan")
-    table.add_column("Parameter", style="cyan")
-    table.add_column("Value", style="yellow")
-    
-    table.add_row("Symbol", symbol.upper())
-    table.add_row("Side", side.upper())
-    table.add_row("Type", order_type.upper())
-    table.add_row("Quantity", str(quantity))
-    
-    if price is not None:
-        table.add_row("Price", str(price))
-    
-    if stop_price is not None:
-        table.add_row("Stop Price", str(stop_price))
-    
-    console.print(table)
-    console.print()
 
 
 def display_order_result(result: OrderResult):
@@ -87,27 +59,31 @@ def display_order_result(result: OrderResult):
         ))
 
 
-@app.command("order")
-def place_order(
-    symbol: str = typer.Option(..., "--symbol", "-s", help="Trading pair symbol (e.g., BTCUSDT)"),
-    side: str = typer.Option(..., "--side", "-side", help="Order side: BUY or SELL"),
-    order_type: str = typer.Option(..., "--type", "-t", help="Order type: MARKET, LIMIT, or STOP_LIMIT"),
-    quantity: float = typer.Option(..., "--quantity", "-q", help="Order quantity"),
-    price: Optional[float] = typer.Option(None, "--price", "-p", help="Limit price (required for LIMIT/STOP_LIMIT)"),
-    stop_price: Optional[float] = typer.Option(None, "--stop-price", "-sp", help="Stop price (required for STOP_LIMIT)"),
-    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug logging")
+@app.command()
+def main(
+    symbol: Optional[str] = typer.Option(None, help="Trading pair symbol (e.g., BTCUSDT)"),
+    side: Optional[str] = typer.Option(None, help="Order side: BUY or SELL"),
+    order_type: Optional[str] = typer.Option(None, "--type", help="Order type: MARKET, LIMIT, or STOP_LIMIT"),
+    quantity: Optional[float] = typer.Option(None, help="Order quantity"),
+    price: Optional[float] = typer.Option(None, help="Limit price (required for LIMIT/STOP_LIMIT)"),
+    stop_price: Optional[float] = typer.Option(None, help="Stop price (required for STOP_LIMIT)"),
+    orders: Optional[str] = typer.Option(None, help="List orders: 'open', 'close', or 'all'"),
+    cancel: Optional[int] = typer.Option(None, help="Order ID to cancel"),
+    account: bool = typer.Option(False, "--account", help="Show account information"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug logging")
 ):
     """
-    Place an order on Binance Futures Testnet.
+    Binance Futures Trading Bot CLI.
     
-    Examples:
+    Actions are identified by the arguments provided:
     
-        # Market order
-        uv run python cli.py order --symbol BTCUSDT --side BUY --type MARKET --quantity 0.001
-        
-        # Limit order
-        uv run python cli.py order --symbol BTCUSDT --side SELL --type LIMIT --quantity 0.001 --price 50000
+    - Check Price: Provide only --symbol
+    - Place Order: Provide --symbol, --side, --type, --quantity (plus --price/--stop-price if needed)
+    - List Orders: Provide --symbol and --orders (open/close/all)
+    - Cancel Order: Provide --symbol and --cancel (order ID)
+    - Account Info: Provide --account
     """
+    
     # Setup logging
     log_level = "DEBUG" if debug else "INFO"
     setup_logging(log_level)
@@ -120,29 +96,149 @@ def place_order(
     ))
     console.print()
     
-    # Display order summary
-    display_order_summary(symbol, side, order_type, quantity, price, stop_price)
-    
     try:
-        # Create order manager and place order
         manager = OrderManager()
-        
-        logger.info(f"Processing order: {side} {quantity} {symbol} ({order_type})")
-        
-        result = manager.place_order(
-            symbol=symbol,
-            side=side,
-            order_type=order_type,
-            quantity=quantity,
-            price=price,
-            stop_price=stop_price
-        )
-        
-        # Display result
-        display_order_result(result)
-        
-        # Exit with appropriate code
-        sys.exit(0 if result.success else 1)
+
+        # --- 1. Account Information ---
+        if account:
+            from bot.client import BinanceClient
+            client = BinanceClient()
+            info = client.get_account_info()
+            
+            table = Table(title="📊 Account Information", show_header=True, header_style="bold cyan")
+            table.add_column("Asset", style="cyan")
+            table.add_column("Wallet Balance", style="yellow")
+            table.add_column("Available Balance", style="green")
+            
+            for asset in info.get("assets", []):
+                wallet_balance = float(asset.get("walletBalance", 0))
+                if wallet_balance > 0:
+                    table.add_row(
+                        asset.get("asset"),
+                        f"{wallet_balance:.4f}",
+                        f"{float(asset.get('availableBalance', 0)):.4f}"
+                    )
+            console.print(table)
+            return
+
+        # --- 2. List Orders (Open / History) ---
+        if orders:
+            if not symbol:
+                console.print(Panel("[bold red]Error:[/bold red] --symbol is required to list orders.", border_style="red"))
+                sys.exit(1)
+            
+            orders_mode = orders.lower()
+            if orders_mode == 'open':
+                title = f"⏳ Open Orders ({symbol.upper()})"
+                fetched_orders = manager.get_open_orders(symbol)
+            elif orders_mode in ['close', 'all']:
+                # Note: 'all' usually fetches everything (open + history). 'close' isn't explicitly distinct in API mostly, 
+                # but we can treat 'close' and 'all' as fetching history for this implementation.
+                title = f"📜 Order History ({symbol.upper()})"
+                fetched_orders = manager.get_order_history(symbol)
+            else:
+                console.print(Panel(f"[bold red]Error:[/bold red] Invalid value for --orders. Use 'open', 'close', or 'all'.", border_style="red"))
+                sys.exit(1)
+
+            if not fetched_orders:
+                console.print(Panel(f"No orders found for {symbol.upper()}", border_style="yellow"))
+                return
+
+            table = Table(title=title, show_header=True, header_style="bold cyan")
+            table.add_column("Order ID", style="cyan")
+            table.add_column("Type", style="white")
+            table.add_column("Side", style="magenta")
+            table.add_column("Price", style="green")
+            table.add_column("Qty", style="yellow")
+            table.add_column("Status", style="bold")
+            table.add_column("Time", style="dim")
+            
+            for order in fetched_orders:
+                ts = int(order.get("time", 0)) / 1000
+                time_str = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')
+                
+                order_side = order.get("side", "")
+                side_style = "green" if order_side == "BUY" else "red"
+                
+                table.add_row(
+                    str(order.get("orderId")),
+                    order.get("type"),
+                    f"[{side_style}]{order_side}[/{side_style}]",
+                    str(order.get("price")),
+                    str(order.get("origQty")),
+                    order.get("status"),
+                    time_str
+                )
+            console.print(table)
+            return
+
+        # --- 3. Cancel Order ---
+        if cancel:
+            if not symbol:
+                console.print(Panel("[bold red]Error:[/bold red] --symbol is required to cancel an order.", border_style="red"))
+                sys.exit(1)
+            
+            result = manager.cancel_order(symbol, cancel)
+            display_order_result(result)
+            sys.exit(0 if result.success else 1)
+
+        # --- 4. Place Order ---
+        if symbol and side and order_type and quantity:
+            # Display summary
+            table = Table(title="📝 Order Request Summary", show_header=True, header_style="bold cyan")
+            table.add_column("Parameter", style="cyan")
+            table.add_column("Value", style="yellow")
+            
+            table.add_row("Symbol", symbol.upper())
+            table.add_row("Side", side.upper())
+            table.add_row("Type", order_type.upper())
+            table.add_row("Quantity", str(quantity))
+            if price is not None:
+                table.add_row("Price", str(price))
+            if stop_price is not None:
+                table.add_row("Stop Price", str(stop_price))
+            console.print(table)
+            console.print()
+
+            logger.info(f"Processing order: {side} {quantity} {symbol} ({order_type})")
+            
+            result = manager.place_order(
+                symbol=symbol,
+                side=side,
+                order_type=order_type,
+                quantity=quantity,
+                price=price,
+                stop_price=stop_price
+            )
+            display_order_result(result)
+            sys.exit(0 if result.success else 1)
+
+        # --- 5. Price Check & Suggestions ---
+        if symbol:
+            current_price = manager.get_current_price(symbol.upper())
+            
+            if current_price:
+                console.print(Panel(
+                    f"[bold cyan]{symbol.upper()}[/bold cyan]: [bold green]${current_price:,.2f}[/bold green]",
+                    title="💰 Current Price",
+                    border_style="cyan"
+                ))
+                
+                # Show suggestions since only symbol was provided
+                console.print("\n[dim]💡 Suggestions:[/dim]")
+                console.print(f"[dim]To place an order:[/dim] [green]--symbol {symbol} --side BUY --type MARKET --quantity 0.001[/green]")
+                console.print(f"[dim]To view orders:[/dim]    [green]--symbol {symbol} --orders open[/green]")
+                console.print(f"[dim]To cancel order:[/dim]    [green]--symbol {symbol} --cancel <ID>[/green]")
+            else:
+                console.print(Panel(
+                    f"[bold red]Could not fetch price for {symbol}[/bold red]",
+                    border_style="red"
+                ))
+                sys.exit(1)
+            return
+            
+        # If no arguments provided
+        console.print("[yellow]No action specified. Use --help to see available options.[/yellow]")
         
     except BinanceClientError as e:
         logger.error(f"Binance API error: {e}")
@@ -158,222 +254,6 @@ def place_order(
             border_style="red"
         ))
         sys.exit(1)
-
-
-@app.command("price")
-def get_price(
-    symbol: str = typer.Option(..., "--symbol", "-s", help="Trading pair symbol (e.g., BTCUSDT)")
-):
-    """
-    Get current price for a trading pair.
-    
-    Example:
-        uv run python cli.py price --symbol BTCUSDT
-    """
-    setup_logging("INFO")
-    
-    try:
-        manager = OrderManager()
-        price = manager.get_current_price(symbol.upper())
-        
-        if price:
-            console.print(Panel(
-                f"[bold cyan]{symbol.upper()}[/bold cyan]: [bold green]${price:,.2f}[/bold green]",
-                title="💰 Current Price",
-                border_style="cyan"
-            ))
-        else:
-            console.print(Panel(
-                f"[bold red]Could not fetch price for {symbol}[/bold red]",
-                border_style="red"
-            ))
-            sys.exit(1)
-            
-    except Exception as e:
-        console.print(Panel(f"[bold red]Error:[/bold red] {e}", border_style="red"))
-        sys.exit(1)
-
-
-@app.command("account")
-def get_account():
-    """
-    Get account information.
-    
-    Example:
-        uv run python cli.py account
-    """
-    setup_logging("INFO")
-    
-    try:
-        from bot.client import BinanceClient
-        client = BinanceClient()
-        info = client.get_account_info()
-        
-        table = Table(title="📊 Account Information", show_header=True, header_style="bold cyan")
-        table.add_column("Asset", style="cyan")
-        table.add_column("Wallet Balance", style="yellow")
-        table.add_column("Available Balance", style="green")
-        
-        for asset in info.get("assets", []):
-            wallet_balance = float(asset.get("walletBalance", 0))
-            if wallet_balance > 0:
-                table.add_row(
-                    asset.get("asset"),
-                    f"{wallet_balance:.4f}",
-                    f"{float(asset.get('availableBalance', 0)):.4f}"
-                )
-        
-        console.print(table)
-        
-    except Exception as e:
-        console.print(Panel(f"[bold red]Error:[/bold red] {e}", border_style="red"))
-        sys.exit(1)
-
-
-@app.command("cancel")
-def cancel_order(
-    symbol: str = typer.Option(..., "--symbol", "-s", help="Trading pair symbol"),
-    order_id: int = typer.Option(..., "--order-id", "-id", help="Order ID to cancel")
-):
-    """
-    Cancel an existing order.
-    
-    Example:
-        uv run python cli.py cancel --symbol BTCUSDT --order-id 12345678
-    """
-    setup_logging("INFO")
-    
-    try:
-        manager = OrderManager()
-        result = manager.cancel_order(symbol, order_id)
-        display_order_result(result)
-        sys.exit(0 if result.success else 1)
-        
-    except Exception as e:
-        console.print(Panel(f"[bold red]Error:[/bold red] {e}", border_style="red"))
-        sys.exit(1)
-
-
-@app.command("orders")
-def list_orders(
-    symbol: str = typer.Option(..., "--symbol", "-s", help="Trading pair symbol"),
-    history: bool = typer.Option(False, "--history", "-h", help="Show order history instead of open orders"),
-    limit: int = typer.Option(10, "--limit", "-l", help="Limit number of history orders")
-):
-    """
-    List orders (Open orders by default).
-    
-    Examples:
-        uv run python cli.py orders --symbol BTCUSDT
-        uv run python cli.py orders --symbol BTCUSDT --history
-    """
-    setup_logging("INFO")
-    
-    try:
-        manager = OrderManager()
-        
-        if history:
-            title = f"📜 Order History ({symbol.upper()})"
-            orders = manager.get_order_history(symbol, limit)
-        else:
-            title = f"⏳ Open Orders ({symbol.upper()})"
-            orders = manager.get_open_orders(symbol)
-            
-        if not orders:
-            console.print(Panel(f"No orders found for {symbol.upper()}", border_style="yellow"))
-            return
-
-        table = Table(title=title, show_header=True, header_style="bold cyan")
-        table.add_column("Order ID", style="cyan")
-        table.add_column("Type", style="white")
-        table.add_column("Side", style="magenta")
-        table.add_column("Price", style="green")
-        table.add_column("Qty", style="yellow")
-        table.add_column("Status", style="bold")
-        table.add_column("Time", style="dim")
-        
-        for order in orders:
-            # Format time
-            import datetime
-            ts = int(order.get("time", 0)) / 1000
-            time_str = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')
-            
-            # Colorize side
-            side = order.get("side", "")
-            side_style = "green" if side == "BUY" else "red"
-            
-            table.add_row(
-                str(order.get("orderId")),
-                order.get("type"),
-                f"[{side_style}]{side}[/{side_style}]",
-                str(order.get("price")),
-                str(order.get("origQty")),
-                order.get("status"),
-                time_str
-            )
-            
-        console.print(table)
-        
-    except Exception as e:
-        console.print(Panel(f"[bold red]Error:[/bold red] {e}", border_style="red"))
-        sys.exit(1)
-
-
-@app.command("positions")
-def list_positions(
-    symbol: Optional[str] = typer.Option(None, "--symbol", "-s", help="Optional trading pair symbol")
-):
-    """
-    List open positions.
-    
-    Example:
-        uv run python cli.py positions
-        uv run python cli.py positions --symbol BTCUSDT
-    """
-    setup_logging("INFO")
-    
-    try:
-        manager = OrderManager()
-        positions = manager.get_positions(symbol)
-        
-        if not positions:
-            console.print(Panel("No open positions found.", border_style="yellow"))
-            return
-
-        table = Table(title="📈 Open Positions", show_header=True, header_style="bold cyan")
-        table.add_column("Symbol", style="cyan")
-        table.add_column("Size", style="yellow")
-        table.add_column("Entry Price", style="white")
-        table.add_column("Mark Price", style="blue")
-        table.add_column("PNL (USDT)", style="bold")
-        
-        for pos in positions:
-            pnl = float(pos.get("unRealizedProfit", 0))
-            pnl_style = "green" if pnl >= 0 else "red"
-            
-            table.add_row(
-                pos.get("symbol"),
-                str(pos.get("positionAmt")),
-                str(round(float(pos.get("entryPrice", 0)), 2)),
-                str(round(float(pos.get("markPrice", 0)), 2)),
-                f"[{pnl_style}]{pnl:.2f}[/{pnl_style}]"
-            )
-            
-        console.print(table)
-        
-    except Exception as e:
-        console.print(Panel(f"[bold red]Error:[/bold red] {e}", border_style="red"))
-        sys.exit(1)
-
-
-@app.callback()
-def main():
-    """
-    Binance Futures Testnet Trading Bot
-    
-    A CLI tool for placing orders on Binance Futures Testnet.
-    """
-    pass
 
 
 if __name__ == "__main__":
