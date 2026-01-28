@@ -1,7 +1,7 @@
 [project]
 name = "trading-bot"
 version = "0.2.0"
-description = "A trading bot for Binance Futures Testnet with Algo Order API support (STOP, TAKE_PROFIT, TRAILING_STOP)"
+description = "A trading bot for Binance Futures Testnet"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
