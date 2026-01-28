@@ -13,29 +13,6 @@ A Python CLI trading bot for placing orders on Binance Futures Testnet (USDT-M).
 - ✅ Input validation with clear error messages.
 - ✅ Comprehensive logging to file.
 
-## Project Structure
-
-```
-trading_bot/
-├── bot/
-│   ├── __init__.py          # Package init
-│   ├── client.py             # Binance API client wrapper (httpx based)
-│   ├── orders.py             # Order placement logic
-│   ├── validators.py         # Input validation
-│   └── logging_config.py     # Logging configuration
-├── tests/
-│   ├── __init__.py
-│   ├── conftest.py           # Pytest fixtures
-│   ├── test_validators.py    # Validator tests
-│   ├── test_orders.py        # Order manager tests
-│   ├── test_client.py        # Client tests
-│   └── test_cli.py           # CLI tests
-├── logs/                     # Log files directory
-├── cli.py                    # CLI entry point
-├── .env                      # Environment variables
-├── pyproject.toml            # Project configuration
-└── README.md                 # This file
-```
 
 ## Setup
 
@@ -104,7 +81,7 @@ uv run python cli.py --symbol BTCUSDT --side BUY --type STOP_LIMIT --quantity 0.
 uv run python cli.py --symbol BTCUSDT --orders open
 ```
 
-**List Order History (Closed/All):**
+**List Order History (includes both open/closed):**
 ```bash
 uv run python cli.py --symbol BTCUSDT --orders all
 ```
@@ -137,10 +114,6 @@ uv run pytest
 # Run with verbose output
 uv run pytest -v
 ```
-
-## Log Files
-
-Log files are automatically created in the `logs/` directory with timestamps.
 
 ## Assumptions
 

@@ -321,13 +321,3 @@ class OrderManager:
         except BinanceClientError as e:
             self.logger.error(f"Failed to get order history: {e}")
             return []
-
-    def get_positions(self, symbol: Optional[str] = None) -> list:
-        """Get open positions (only those with non-zero quantity)."""
-        try:
-            positions = self.client.get_position_risk(symbol)
-            # Filter for positions with non-zero amount
-            return [p for p in positions if float(p.get("positionAmt", 0)) != 0]
-        except BinanceClientError as e:
-            self.logger.error(f"Failed to get positions: {e}")
-            return []

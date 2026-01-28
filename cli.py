@@ -17,7 +17,7 @@ from bot.orders import OrderManager, OrderResult
 from bot.client import BinanceClientError
 
 
-# Initialize Typer app (no subcommands, single entry point)
+# Initialize Typer app 
 app = typer.Typer(
     name="trading-bot",
     help="Binance Futures Testnet Trading Bot CLI",

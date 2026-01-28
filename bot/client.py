@@ -181,10 +181,6 @@ class BinanceClient:
             self.logger.error(f"Network error: {e}")
             raise BinanceClientError(f"Network error: {e}")
     
-    def get_exchange_info(self) -> dict:
-        """Get exchange information."""
-        return self._request("GET", "/exchangeInfo", signed=False)
-    
     def get_account_info(self) -> dict:
         """Get account information."""
         return self._request("GET", "/fapi/v2/account")
@@ -247,23 +243,6 @@ class BinanceClient:
         
         return self._request("POST", "/order", params)
     
-    def get_order(self, symbol: str, order_id: int) -> dict:
-        """
-        Get order details.
-        
-        Args:
-            symbol: Trading pair symbol
-            order_id: Order ID
-        
-        Returns:
-            Order details
-        """
-        params = {
-            "symbol": symbol.upper(),
-            "orderId": order_id
-        }
-        return self._request("GET", "/order", params)
-    
     def cancel_order(self, symbol: str, order_id: int) -> dict:
         """
         Cancel an order.
@@ -312,21 +291,6 @@ class BinanceClient:
             "limit": limit
         }
         return self._request("GET", "/allOrders", params)
-
-    def get_position_risk(self, symbol: Optional[str] = None) -> list:
-        """
-        Get current position information.
-
-        Args:
-            symbol: Optional trading pair symbol
-
-        Returns:
-            List of positions
-        """
-        params = {}
-        if symbol:
-            params["symbol"] = symbol.upper()
-        return self._request("GET", "/fapi/v2/positionRisk", params)
     
     def close(self):
         """Close the HTTP client."""
